@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:chat_app/api/api.dart';
 import 'package:flutter/material.dart';
 import 'package:bubble/bubble.dart';
@@ -32,12 +30,12 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String _baseurl = "http://192.168.43.24:5005/webhooks/rest/webhook";
+  List<String> buttons = ['પ્લાન્ટ પ્રોટેક્શન', 'ખાતર', 'બજાર માહિતી'];
+  List<dynamic> list = [];
+  String _baseurl = "http://192.168.43.24:5005";
   final GlobalKey<FormState> _ipv4Key = new GlobalKey<FormState>();
   final messageInsert = TextEditingController();
   List<Map> messages = List();
-
-  final GlobalKey<FormState> _chatkey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -90,46 +88,116 @@ class _MyHomePageState extends State<MyHomePage> {
               color: Colors.greenAccent,
             ),
             Container(
-              child: ListTile(
-                leading: IconButton(icon: Icon(Icons.info), onPressed: null),
-                title: Container(
-                  padding: const EdgeInsets.only(left: 15),
-                  child: TextFormField(
-                    controller: messageInsert,
-                    decoration: InputDecoration(
-                      hintText: 'Enter a Message...',
-                      border: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(0),
+                    child: Container(
+                      height: 25,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: buttons.length,
+                        itemBuilder: (context, index) {
+                          final text = buttons[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 8, right: 4),
+                            child: ClipRRect(
+                                borderRadius: BorderRadius.circular(5),
+                                child: Container(
+                                  height: 30,
+                                  width: 120,
+                                  child: RaisedButton(
+                                    onPressed: () async {
+                                      setState(() {
+                                        messages.insert(
+                                            0, {"data": 1, "message": text});
+                                      });
+                                      var api = new Api(_baseurl);
+                                      String response =
+                                          await api.startForm(text);
+                                      setState(() {
+                                        list = api.getList();
+                                        print(list);
+                                      });
+                                      messageInsert.clear();
+                                      setState(() {
+                                        messages.insert(0,
+                                            {"data": 0, "message": response});
+                                      });
+                                    },
+                                    color: Color.fromARGB(255, 66, 71, 112),
+                                    child: Text(
+                                      text,
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.normal,
+                                          fontSize: 15),
+                                    ),
+                                  ),
+                                )),
+                          );
+                        },
+                      ),
                     ),
-                    style: TextStyle(fontSize: 16, color: Colors.black),
                   ),
-                  height: 40,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(15)),
-                    color: Color.fromRGBO(220, 220, 220, 1),
+                  getGrid(),
+                  ListTile(
+                    leading: IconButton(
+                        icon: Icon(Icons.refresh),
+                        onPressed: () async {
+                          setState(() {
+                            messages
+                                .insert(0, {"data": 1, "message": 'Restart'});
+                          });
+                          String response =
+                              await Api(_baseurl).startForm('Restart');
+                          setState(() {
+                            list = [];
+                          });
+                          messageInsert.clear();
+                        }),
+                    title: Container(
+                      padding: const EdgeInsets.only(left: 15),
+                      child: TextFormField(
+                        controller: messageInsert,
+                        decoration: InputDecoration(
+                          hintText: 'Enter a Message...',
+                          border: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.black),
+                      ),
+                      height: 40,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.all(Radius.circular(15)),
+                        color: Color.fromRGBO(220, 220, 220, 1),
+                      ),
+                    ),
+                    trailing: IconButton(
+                        icon: Icon(Icons.send),
+                        onPressed: () async {
+                          if (messageInsert.text.isEmpty) {
+                            print("Null");
+                          } else {
+                            setState(() {
+                              messages.insert(0,
+                                  {"data": 1, "message": messageInsert.text});
+                            });
+                            var api = new Api(_baseurl);
+                            String response =
+                                await api.chat(messageInsert.text);
+                            messageInsert.clear();
+                            setState(() {
+                              messages
+                                  .insert(0, {"data": 0, "message": response});
+                            });
+                          }
+                        }),
                   ),
-                ),
-                trailing: IconButton(
-                    icon: Icon(Icons.send),
-                    onPressed: () async {
-                      if (messageInsert.text.isEmpty) {
-                        print("Null");
-                      } else {
-                        setState(() {
-                          messages.insert(
-                              0, {"data": 1, "message": messageInsert.text});
-                        });
-                        String response =
-                            await Api(_baseurl).chat(messageInsert.text);
-                        messageInsert.clear();
-                        setState(() {
-                          messages.insert(0, {"data": 0, "message": response});
-                        });
-                      }
-                    }),
+                ],
               ),
             )
           ]),
@@ -194,5 +262,52 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
     );
+  }
+
+  Widget getGrid() {
+    if (this.list.length == 0) {
+      return Container();
+    } else {
+      return Container(
+        height: 100,
+        child: GridView.count(
+            crossAxisCount: 3,
+            childAspectRatio: 8/2,
+            children: List.generate(list.length, (index) {
+              return Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: ClipRRect(
+                    borderRadius: BorderRadius.circular(5),
+                    child: Container(
+                      child: RaisedButton(
+                        onPressed: () async {
+                          setState(() {
+                            messages
+                                .insert(0, {"data": 1, "message": list[index]});
+                          });
+                          var api = new Api(_baseurl);
+                          String response = await api.chat(list[index]);
+                          setState(() {
+                            list=api.getList();
+                          });
+                          messageInsert.clear();
+                          setState(() {
+                            messages.insert(0, {"data": 0, "message": response});
+                          });
+                        },
+                        color: Colors.amber,
+                        child: Text(
+                          list[index],
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.normal,
+                              fontSize: 15),
+                        ),
+                      ),
+                    )),
+              );
+            })),
+      );
+    }
   }
 }
