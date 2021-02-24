@@ -16,7 +16,11 @@ class Api {
     if (response.statusCode == 200) {
       print(response.body);
       List receivedResponse = json.decode(response.body);
-      if (receivedResponse.length != 0) {
+      if (receivedResponse.length > 1) {
+        this.list =
+            receivedResponse[receivedResponse.length - 1]['custom']['data'];
+        return receivedResponse[0]['text'];
+      } else if (receivedResponse.length == 1) {
         Map receivedData = receivedResponse[0];
         return receivedData['text'];
       } else {
@@ -47,7 +51,8 @@ class Api {
       List receivedResponse = json.decode(response.body);
       print(receivedResponse.length);
       if (receivedResponse.length > 1) {
-        this.list = receivedResponse[1]['custom']['data'];
+        this.list =
+            receivedResponse[receivedResponse.length - 1]['custom']['data'];
         return receivedResponse[0]['text'];
       } else if (receivedResponse.length == 1) {
         Map receivedData = receivedResponse[0];

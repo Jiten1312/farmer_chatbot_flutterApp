@@ -30,6 +30,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  bool isLoading = false;
   List<String> buttons = ['પ્લાન્ટ પ્રોટેક્શન', 'ખાતર', 'બજાર માહિતી'];
   List<dynamic> list = [];
   String _baseurl = "http://192.168.43.24:5005";
@@ -83,6 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
             SizedBox(
               height: 20,
             ),
+            loadWidget(isLoading),
             Divider(
               height: 5.0,
               color: Colors.greenAccent,
@@ -90,68 +92,24 @@ class _MyHomePageState extends State<MyHomePage> {
             Container(
               child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.all(0),
-                    child: Container(
-                      height: 25,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: buttons.length,
-                        itemBuilder: (context, index) {
-                          final text = buttons[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(left: 8, right: 4),
-                            child: ClipRRect(
-                                borderRadius: BorderRadius.circular(5),
-                                child: Container(
-                                  height: 30,
-                                  width: 120,
-                                  child: RaisedButton(
-                                    onPressed: () async {
-                                      setState(() {
-                                        messages.insert(
-                                            0, {"data": 1, "message": text});
-                                      });
-                                      var api = new Api(_baseurl);
-                                      String response =
-                                          await api.startForm(text);
-                                      setState(() {
-                                        list = api.getList();
-                                        print(list);
-                                      });
-                                      messageInsert.clear();
-                                      setState(() {
-                                        messages.insert(0,
-                                            {"data": 0, "message": response});
-                                      });
-                                    },
-                                    color: Color.fromARGB(255, 66, 71, 112),
-                                    child: Text(
-                                      text,
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.normal,
-                                          fontSize: 15),
-                                    ),
-                                  ),
-                                )),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
+                  getList(),
                   getGrid(),
                   ListTile(
                     leading: IconButton(
                         icon: Icon(Icons.refresh),
                         onPressed: () async {
                           setState(() {
-                            messages
-                                .insert(0, {"data": 1, "message": 'Restart'});
+                            isLoading = true;
                           });
                           String response =
                               await Api(_baseurl).startForm('Restart');
                           setState(() {
+                            isLoading = false;
+                            buttons = [
+                              'પ્લાન્ટ પ્રોટેક્શન',
+                              'ખાતર',
+                              'બજાર માહિતી'
+                            ];
                             list = [];
                           });
                           messageInsert.clear();
@@ -187,13 +145,37 @@ class _MyHomePageState extends State<MyHomePage> {
                                   {"data": 1, "message": messageInsert.text});
                             });
                             var api = new Api(_baseurl);
-                            String response =
-                                await api.chat(messageInsert.text);
-                            messageInsert.clear();
-                            setState(() {
-                              messages
-                                  .insert(0, {"data": 0, "message": response});
-                            });
+                            if (messageInsert.text == 'બજાર માહિતી' ||
+                                messageInsert.text == 'ખાતર' ||
+                                messageInsert.text == 'પ્લાન્ટ પ્રોટેક્શન') {
+                              setState(() {
+                                isLoading = true;
+                              });
+                              String response =
+                                  await api.startForm(messageInsert.text);
+                              messageInsert.clear();
+                              setState(() {
+                                isLoading = false;
+                                list = api.getList();
+                                print(list);
+                                buttons = [];
+                              });
+                            } else {
+                              setState(() {
+                                isLoading = true;
+                              });
+                              String response =
+                                  await api.chat(messageInsert.text);
+                              messageInsert.clear();
+                              setState(() {
+                                messages.insert(
+                                    0, {"data": 0, "message": response});
+                                isLoading = false;
+                                list = api.getList();
+                                print(list);
+                                buttons = [];
+                              });
+                            }
                           }
                         }),
                   ),
@@ -269,10 +251,10 @@ class _MyHomePageState extends State<MyHomePage> {
       return Container();
     } else {
       return Container(
-        height: 100,
+        height: 150,
         child: GridView.count(
             crossAxisCount: 3,
-            childAspectRatio: 8/2,
+            childAspectRatio: 8 / 4,
             children: List.generate(list.length, (index) {
               return Padding(
                 padding: const EdgeInsets.all(4.0),
@@ -282,17 +264,20 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: RaisedButton(
                         onPressed: () async {
                           setState(() {
+                            isLoading = true;
                             messages
                                 .insert(0, {"data": 1, "message": list[index]});
                           });
                           var api = new Api(_baseurl);
                           String response = await api.chat(list[index]);
                           setState(() {
-                            list=api.getList();
+                            isLoading = false;
+                            list = api.getList();
                           });
                           messageInsert.clear();
                           setState(() {
-                            messages.insert(0, {"data": 0, "message": response});
+                            messages
+                                .insert(0, {"data": 0, "message": response});
                           });
                         },
                         color: Colors.amber,
@@ -308,6 +293,68 @@ class _MyHomePageState extends State<MyHomePage> {
               );
             })),
       );
+    }
+  }
+
+  Widget getList() {
+    if (buttons.length == 0) {
+      return Container();
+    } else {
+      return Container(
+        height: 25,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: buttons.length,
+          itemBuilder: (context, index) {
+            final text = buttons[index];
+            return Padding(
+              padding: const EdgeInsets.only(left: 8, right: 4),
+              child: ClipRRect(
+                  borderRadius: BorderRadius.circular(5),
+                  child: Container(
+                    height: 30,
+                    width: 120,
+                    child: RaisedButton(
+                      onPressed: () async {
+                        setState(() {
+                          isLoading = true;
+                          messages.insert(0, {"data": 1, "message": text});
+                        });
+                        var api = new Api(_baseurl);
+                        String response = await api.startForm(text);
+                        setState(() {
+                          isLoading = false;
+                          buttons = [];
+                          list = api.getList();
+                          print(list);
+                        });
+                        messageInsert.clear();
+                        setState(() {
+                          messages.insert(0, {"data": 0, "message": response});
+                        });
+                      },
+                      color: Color.fromARGB(255, 66, 71, 112),
+                      child: Text(
+                        text,
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.normal,
+                            fontSize: 15),
+                      ),
+                    ),
+                  )),
+            );
+          },
+        ),
+      );
+    }
+  }
+
+  Widget loadWidget(bool isLoading) {
+    if (isLoading) {
+      return CircularProgressIndicator();
+    } else {
+      return Container();
     }
   }
 }
