@@ -4,13 +4,14 @@ import 'package:http/http.dart' as http;
 
 class Api {
   final String baseurl;
-  Api(this.baseurl);
+  final String rId;
+  Api({this.baseurl, this.rId});
   final String url = "http://192.168.43.24:5005/webhooks/rest/webhook";
   List list = [];
 
   Future chat(String message) async {
     print("Base Url: " + baseurl);
-    Map data = {"sender": "test_user", "message": message};
+    Map data = {"sender": rId, "message": message};
     http.Response response = await http.post(baseurl + '/webhooks/rest/webhook',
         body: json.encode(data));
     if (response.statusCode == 200) {
@@ -43,7 +44,7 @@ class Api {
     };
     String message = labelMap[label];
     print(message);
-    Map data = {"sender": "test_user", "message": message};
+    Map data = {"sender": rId, "message": message};
     http.Response response = await http.post(baseurl + '/webhooks/rest/webhook',
         body: json.encode(data));
     if (response.statusCode == 200) {

@@ -1,6 +1,8 @@
 import 'package:chat_app/api/api.dart';
+import 'package:chat_app/gridbutton.dart';
 import 'package:flutter/material.dart';
 import 'package:bubble/bubble.dart';
+import 'dart:math';
 
 void main() {
   runApp(MyApp());
@@ -34,12 +36,14 @@ class _MyHomePageState extends State<MyHomePage> {
   List<String> buttons = ['પ્લાન્ટ પ્રોટેક્શન', 'ખાતર', 'બજાર માહિતી'];
   List<dynamic> list = [];
   String _baseurl = "http://192.168.43.24:5005";
+  String rId = new Random().nextInt(999999999).toString();
   final GlobalKey<FormState> _ipv4Key = new GlobalKey<FormState>();
   final messageInsert = TextEditingController();
   List<Map> messages = List();
 
   @override
   Widget build(BuildContext context) {
+    print(rId);
     return Scaffold(
         appBar: AppBar(
           title: Text(widget.title),
@@ -102,7 +106,8 @@ class _MyHomePageState extends State<MyHomePage> {
                             isLoading = true;
                           });
                           String response =
-                              await Api(_baseurl).startForm('Restart');
+                              await Api(baseurl: _baseurl, rId: rId)
+                                  .startForm('Restart');
                           setState(() {
                             isLoading = false;
                             buttons = [
@@ -144,7 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               messages.insert(0,
                                   {"data": 1, "message": messageInsert.text});
                             });
-                            var api = new Api(_baseurl);
+                            var api = new Api(baseurl: _baseurl, rId: rId);
                             if (messageInsert.text == 'બજાર માહિતી' ||
                                 messageInsert.text == 'ખાતર' ||
                                 messageInsert.text == 'પ્લાન્ટ પ્રોટેક્શન') {
@@ -251,7 +256,7 @@ class _MyHomePageState extends State<MyHomePage> {
       return Container();
     } else {
       return Container(
-        height: 150,
+        height: 250,
         child: GridView.count(
             crossAxisCount: 3,
             childAspectRatio: 8 / 4,
@@ -268,7 +273,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             messages
                                 .insert(0, {"data": 1, "message": list[index]});
                           });
-                          var api = new Api(_baseurl);
+                          var api = new Api(baseurl: _baseurl, rId: rId);
                           String response = await api.chat(list[index]);
                           setState(() {
                             isLoading = false;
@@ -281,13 +286,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           });
                         },
                         color: Colors.amber,
-                        child: Text(
-                          list[index],
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.normal,
-                              fontSize: 15),
-                        ),
+                        child: GridButton(text:list[index])
                       ),
                     )),
               );
@@ -320,7 +319,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           isLoading = true;
                           messages.insert(0, {"data": 1, "message": text});
                         });
-                        var api = new Api(_baseurl);
+                        var api = new Api(baseurl: _baseurl, rId: rId);
                         String response = await api.startForm(text);
                         setState(() {
                           isLoading = false;
